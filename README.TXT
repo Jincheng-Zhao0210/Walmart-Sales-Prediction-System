@@ -1,0 +1,5 @@
+The Walmart Weekly Sales Prediction System is designed to help store managers, regional leaders, and supply chain planners make faster and more accurate operational decisions. 
+Walmart operates thousands of stores across diverse regions, and sales performance fluctuates widely due to seasonality, weather, holidays, fuel prices, and economic conditions. Without a predictive system, managers must rely on historical averages or intuition, which often leads to overstaffing, understaffing, missed sales opportunities, or excessive inventory costs.
+This machine learning system provides reliable weekly sales forecasts and insights using real-time inputs such as temperature, CPI, unemployment rate, and seasonal factors. 
+The platform simplifies forecasting into an easy, no-code dashboard that anyone can use. 
+By predicting demand ahead of time, the system helps Walmart prevent stockouts, reduce waste, improve labor planning, and enhance overall customer satisfaction. Ultimately, it transforms raw data into actionable intelligence that strengthens operational efficiency across the organization.
