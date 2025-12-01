@@ -87,19 +87,16 @@ if bg64:
     )
 
 # ============================================================
-# 3) OPENAI CLIENT — FIXED MODEL (o3-mini, NO MORE 429 ERRORS)
+# 3) OPENAI CLIENT + INSIGHT FUNCTION
 # ============================================================
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def ai_insight(title, explanation, values):
-    """
-    Uses o3-mini (higher rate limits, no 429 errors)
-    Same behavior, same format.
-    """
     prompt = f"""
     You are a business analyst explaining results to Walmart executives.
     Use clear business English, avoid ML jargon, and give 3–5 bullet points.
+
     Title: {title}
     Context: {explanation}
     Values: {values}
@@ -107,14 +104,13 @@ def ai_insight(title, explanation, values):
 
     try:
         resp = client.chat.completions.create(
-            model="o3-mini",     # 🚀 FIX: new model with high rate limits
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=200
+            max_tokens=200,
         )
         return resp.choices[0].message.content.strip()
-
     except Exception as e:
-        return f"⚠️ AI unavailable: {str(e)[:150]}"
+        return f"(AI insight unavailable: {e})"
 
 # ============================================================
 # 4) HEADER
@@ -139,7 +135,7 @@ if logo64:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ============================================================
-# 5) PROJECT OVERVIEW
+# 5) ENHANCED PROJECT OVERVIEW (YOUR EXACT TEXT)
 # ============================================================
 
 st.markdown("""
@@ -151,16 +147,42 @@ st.markdown("""
     📊 Walmart Weekly Sales Prediction Dashboard
 </h1>
 
+<br>
+
 <h2 style="color:#38BDF8; font-weight:800;">📝 Project Overview</h2>
 
-<p>This application predicts weekly Walmart sales and supports operational 
-decisions such as inventory ordering, staffing management, and demand planning.</p>
+<p>This application is part of a machine learning project focused on predicting 
+<strong>Walmart’s weekly sales</strong> and making these predictions accessible 
+through an easy-to-use web interface.</p>
+
+<p>The tool is designed to support <strong>Store Managers</strong> and 
+<strong>Regional Managers</strong> by helping them make data-driven operational decisions, such as:</p>
+
+<h3 style="color:#38BDF8; font-weight:800;">For Store & Regional Managers:</h3>
+<ul>
+    <li>👥 How many employees to schedule</li>
+    <li>📦 How much inventory to order</li>
+    <li>📈 When to prepare for high-demand periods</li>
+</ul>
+
+<p>Because the interface requires <strong>no coding skills</strong>, managers can obtain real-time sales predictions quickly.</p>
+
+<h3 style="color:#38BDF8; font-weight:800;">For Supply Chain & Inventory Planners:</h3>
+<ul>
+    <li>🚫 Prevent stockouts</li>
+    <li>📉 Reduce overstock</li>
+    <li>🚚 Manage logistics and replenishment more efficiently</li>
+</ul>
+
+<p>This application transforms raw data into 
+<strong>actionable insights</strong>, helping Walmart improve forecasting, planning, 
+and operational efficiency.</p>
 
 </div>
 """, unsafe_allow_html=True)
 
 # ============================================================
-# 6) INPUT FORM
+# 6) MAIN INPUT CARD
 # ============================================================
 
 st.markdown("<div class='main-card'>", unsafe_allow_html=True)
@@ -183,7 +205,7 @@ with col2:
     unemp = st.number_input("Unemployment Rate (%)", value=5.0)
 
 # ============================================================
-# 7) INPUT DATAFRAME
+# 7) FIXED INPUT SCHEMA — MATCHES YOUR MODEL EXACTLY
 # ============================================================
 
 input_df = pd.DataFrame({
@@ -216,7 +238,7 @@ if st.button("Predict Weekly Sales"):
     st.info(
         ai_insight(
             "Weekly Sales Prediction",
-            "Explain what this means for planning.",
+            "Explain the meaning of this forecast for labor planning and inventory decisions.",
             {"predicted_sales": pred, "store": store},
         )
     )
@@ -225,7 +247,7 @@ if st.button("Predict Weekly Sales"):
 # 9) FEATURE SENSITIVITY
 # ============================================================
 
-st.subheader("📍 Feature Sensitivity")
+st.subheader("📍 Feature Sensitivity (What drives this prediction?)")
 
 base_pred = float(model.predict(input_df)[0])
 importance = {}
@@ -241,7 +263,7 @@ importance = dict(sorted(importance.items(), key=lambda x: x[1], reverse=True))
 fig_imp, ax_imp = plt.subplots()
 ax_imp.barh(list(importance.keys()), list(importance.values()), color="#38BDF8")
 ax_imp.invert_yaxis()
-ax_imp.set_xlabel("Change in Prediction")
+ax_imp.set_xlabel("Change in Predicted Sales")
 ax_imp.set_title("Feature Sensitivity (+10%)")
 st.pyplot(fig_imp)
 
@@ -249,7 +271,7 @@ st.write("### 🧠 AI Insight on Drivers")
 st.info(
     ai_insight(
         "Feature Sensitivity",
-        "Which inputs matter most?",
+        "Explain which inputs have the greatest influence on projected sales.",
         importance,
     )
 )
@@ -278,8 +300,8 @@ future_preds = model.predict(forecast_df)
 
 fig_fore, ax_fore = plt.subplots()
 ax_fore.plot(future_weeks, future_preds, marker="o", color="#00D5FF")
-ax_fore.set_xlabel("Week")
-ax_fore.set_ylabel("Predicted Sales")
+ax_fore.set_xlabel("Week Number")
+ax_fore.set_ylabel("Predicted Weekly Sales")
 ax_fore.set_title("10-Week Forecast")
 st.pyplot(fig_fore)
 
@@ -287,8 +309,8 @@ st.write("### 🧠 AI Insight on Forecast")
 st.info(
     ai_insight(
         "10-Week Forecast",
-        "Explain expected trend for planning.",
-        {"weeks": list(future_weeks)},
+        "Explain how this forecast supports planning and operations.",
+        {"weeks": list(future_weeks), "sales": list(map(float, future_preds))},
     )
 )
 
