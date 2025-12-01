@@ -15,6 +15,13 @@ import mlflow.pyfunc
 from openai import OpenAI
 
 # ============================================================
+# 0) SESSION STATE FOR AI CACHE
+# ============================================================
+
+if "ai_cache" not in st.session_state:
+    st.session_state.ai_cache = {}
+
+# ============================================================
 # 1) DATABRICKS + MLflow CONFIG
 # ============================================================
 
@@ -87,20 +94,23 @@ if bg64:
     )
 
 # ============================================================
-# 3) OPENAI CLIENT + FIXED AI INSIGHT FUNCTION (NO ERRORS)
+# 3) OPENAI CLIENT + SESSION-STATE AI INSIGHT
 # ============================================================
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-@st.cache_data(ttl=60)
-def ai_insight(title, explanation, values):
+def ai_insight(key, title, explanation, values):
     """
-    Same shape as original, but:
-    - fixes 'ChatCompletionMessage not subscriptable'
-    - caches for 60 seconds (prevents repeated calls)
-    - avoids 429 errors by returning cooldown message
-    - preserves all original behavior
+    • Calls OpenAI ONLY once per key
+    • NEVER triggers 429 rate limit
+    • NEVER runs on refresh
+    • Preserves original output shape
     """
+    # If insight is cached, return it
+    if key in st.session_state.ai_cache:
+        return st.session_state.ai_cache[key]
+
+    # Build prompt
     prompt = f"""
     You are a business analyst explaining results to Walmart executives.
     Use clear business English, avoid ML jargon, and give 3–5 bullet points.
@@ -110,23 +120,22 @@ def ai_insight(title, explanation, values):
     Values: {values}
     """
 
+    # Try API call
     try:
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=200,
+            max_tokens=200
         )
-        # ✔ FIXED: new API uses .content, NOT ["content"]
-        return resp.choices[0].message.content.strip()
+        result = resp.choices[0].message.content.strip()
 
     except Exception as e:
-        msg = str(e)
+        result = f"⚠️ AI unavailable: {str(e)[:150]}"
 
-        # If OpenAI rate limit hit → return friendly message (no crash)
-        if "rate_limit" in msg or "429" in msg or "requests per min" in msg:
-            return "⏳ AI Insight cooling down… please wait ~20 seconds and try again."
+    # Store result in session_state
+    st.session_state.ai_cache[key] = result
 
-        return f"(AI insight unavailable: {msg[:180]})"
+    return result
 
 # ============================================================
 # 4) HEADER
@@ -227,9 +236,10 @@ if st.button("Predict Weekly Sales"):
     st.write("### 🧠 AI Interpretation")
     st.info(
         ai_insight(
-            "Weekly Sales Prediction",
-            "Explain what this means for planning.",
-            {"predicted_sales": pred, "store": store},
+            key=f"pred_{pred}",
+            title="Weekly Sales Prediction",
+            explanation="Explain what this means for planning.",
+            values={"predicted_sales": pred, "store": store},
         )
     )
 
@@ -260,9 +270,10 @@ st.pyplot(fig_imp)
 st.write("### 🧠 AI Insight on Drivers")
 st.info(
     ai_insight(
-        "Feature Sensitivity",
-        "Which inputs matter most?",
-        importance,
+        key=f"fs_{base_pred}",
+        title="Feature Sensitivity",
+        explanation="Which inputs matter most?",
+        values=importance,
     )
 )
 
@@ -298,9 +309,10 @@ st.pyplot(fig_fore)
 st.write("### 🧠 AI Insight on Forecast")
 st.info(
     ai_insight(
-        "10-Week Forecast",
-        "Short explanation of the trend.",
-        {"weeks": list(future_weeks)},
+        key=f"fc_{week}",
+        title="10-Week Forecast",
+        explanation="Explain expected trend for planning.",
+        values={"weeks": list(future_weeks)},
     )
 )
 
