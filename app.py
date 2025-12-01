@@ -87,12 +87,17 @@ if bg64:
     )
 
 # ============================================================
-# 3) OPENAI CLIENT + INSIGHT FUNCTION
+# 3) OPENAI CLIENT + SAFE AI INSIGHT FUNCTION
 # ============================================================
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
+@st.cache_data(ttl=3600)
 def ai_insight(title, explanation, values):
+    """
+    Safe, cached AI insight generator.
+    Prevents rate limits and app crashes.
+    """
     prompt = f"""
     You are a business analyst explaining results to Walmart executives.
     Use clear business English, avoid ML jargon, and give 3–5 bullet points.
@@ -108,9 +113,11 @@ def ai_insight(title, explanation, values):
             messages=[{"role": "user", "content": prompt}],
             max_tokens=200,
         )
-        return resp.choices[0].message.content.strip()
+        # Correct syntax for latest API
+        return resp.choices[0].message["content"].strip()
+
     except Exception as e:
-        return f"(AI insight unavailable: {e})"
+        return f"⚠️ AI insight unavailable: {str(e)[:200]}"
 
 # ============================================================
 # 4) HEADER
@@ -135,7 +142,7 @@ if logo64:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ============================================================
-# 5) ENHANCED PROJECT OVERVIEW (YOUR EXACT TEXT)
+# 5) PROJECT OVERVIEW (unchanged)
 # ============================================================
 
 st.markdown("""
@@ -205,7 +212,7 @@ with col2:
     unemp = st.number_input("Unemployment Rate (%)", value=5.0)
 
 # ============================================================
-# 7) FIXED INPUT SCHEMA — MATCHES YOUR MODEL EXACTLY
+# 7) INPUT SCHEMA FOR MODEL
 # ============================================================
 
 input_df = pd.DataFrame({
