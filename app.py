@@ -87,7 +87,7 @@ if bg64:
     )
 
 # ============================================================
-# 3) OPENAI CLIENT + SAFE AI INSIGHT FUNCTION (429 PROTECTED)
+# 3) OPENAI CLIENT + FIXED AI INSIGHT FUNCTION (NO ERRORS)
 # ============================================================
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -96,9 +96,10 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 def ai_insight(title, explanation, values):
     """
     Same shape as original, but:
-    - caches for 60 seconds → prevents repeated calls
+    - fixes 'ChatCompletionMessage not subscriptable'
+    - caches for 60 seconds (prevents repeated calls)
     - avoids 429 errors by returning cooldown message
-    - keeps full OpenAI behavior
+    - preserves all original behavior
     """
     prompt = f"""
     You are a business analyst explaining results to Walmart executives.
@@ -115,14 +116,15 @@ def ai_insight(title, explanation, values):
             messages=[{"role": "user", "content": prompt}],
             max_tokens=200,
         )
-        return resp.choices[0].message["content"].strip()
+        # ✔ FIXED: new API uses .content, NOT ["content"]
+        return resp.choices[0].message.content.strip()
 
     except Exception as e:
         msg = str(e)
 
         # If OpenAI rate limit hit → return friendly message (no crash)
         if "rate_limit" in msg or "429" in msg or "requests per min" in msg:
-            return "⏳ AI Insight cooling down… please wait 20 seconds and try again."
+            return "⏳ AI Insight cooling down… please wait ~20 seconds and try again."
 
         return f"(AI insight unavailable: {msg[:180]})"
 
@@ -163,14 +165,14 @@ st.markdown("""
 
 <h2 style="color:#38BDF8; font-weight:800;">📝 Project Overview</h2>
 
-<p>This application predicts weekly Walmart sales and supports planning:
-workforce management, inventory ordering, and demand forecasting.</p>
+<p>This application predicts weekly Walmart sales and supports operational 
+decisions such as inventory ordering, staffing management, and demand planning.</p>
 
 </div>
 """, unsafe_allow_html=True)
 
 # ============================================================
-# 6) INPUT SECTION
+# 6) INPUT FORM
 # ============================================================
 
 st.markdown("<div class='main-card'>", unsafe_allow_html=True)
@@ -193,7 +195,7 @@ with col2:
     unemp = st.number_input("Unemployment Rate (%)", value=5.0)
 
 # ============================================================
-# 7) INPUT SCHEMA FOR MODEL
+# 7) INPUT DATAFRAME
 # ============================================================
 
 input_df = pd.DataFrame({
@@ -235,7 +237,7 @@ if st.button("Predict Weekly Sales"):
 # 9) FEATURE SENSITIVITY
 # ============================================================
 
-st.subheader("📍 Feature Sensitivity (What drives this prediction?)")
+st.subheader("📍 Feature Sensitivity")
 
 base_pred = float(model.predict(input_df)[0])
 importance = {}
@@ -259,7 +261,7 @@ st.write("### 🧠 AI Insight on Drivers")
 st.info(
     ai_insight(
         "Feature Sensitivity",
-        "Which factors matter most?",
+        "Which inputs matter most?",
         importance,
     )
 )
@@ -297,7 +299,7 @@ st.write("### 🧠 AI Insight on Forecast")
 st.info(
     ai_insight(
         "10-Week Forecast",
-        "Short explanation of trend.",
+        "Short explanation of the trend.",
         {"weeks": list(future_weeks)},
     )
 )
