@@ -1,6 +1,7 @@
 # ============================================================
 # Walmart Weekly Sales Prediction Dashboard
-# Dark Theme • Sky Blue Accents • AI Insights • Python 3.12 Compatible
+# Dark Theme • Sky Blue Accents • Lightweight AI Insights
+# Python 3.12 Compatible
 # ============================================================
 
 import os
@@ -87,7 +88,7 @@ if bg64:
     )
 
 # ============================================================
-# 3) OPENAI CLIENT + SAFE AI INSIGHT FUNCTION
+# 3) LIGHTWEIGHT OPENAI INSIGHT FUNCTION
 # ============================================================
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -95,13 +96,13 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 @st.cache_data(ttl=3600)
 def ai_insight(title, explanation, values):
     """
-    Safe, cached AI insight generator.
-    Prevents rate limits and app crashes.
+    Ultra-light, low-cost AI insights.
+    Generates 3 short bullets (<12 words each).
+    Uses max_tokens=80 to reduce cost.
     """
     prompt = f"""
-    You are a business analyst explaining results to Walmart executives.
-    Use clear business English, avoid ML jargon, and give 3–5 bullet points.
-
+    Give 3 short business insights.
+    Keep each bullet under 12 words.
     Title: {title}
     Context: {explanation}
     Values: {values}
@@ -111,13 +112,12 @@ def ai_insight(title, explanation, values):
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=200,
+            max_tokens=80,
+            temperature=0.3,
         )
-        # Correct syntax for latest API
         return resp.choices[0].message["content"].strip()
-
     except Exception as e:
-        return f"⚠️ AI insight unavailable: {str(e)[:200]}"
+        return f"⚠️ AI insight unavailable: {str(e)[:120]}"
 
 # ============================================================
 # 4) HEADER
@@ -154,42 +154,25 @@ st.markdown("""
     📊 Walmart Weekly Sales Prediction Dashboard
 </h1>
 
-<br>
-
 <h2 style="color:#38BDF8; font-weight:800;">📝 Project Overview</h2>
 
-<p>This application is part of a machine learning project focused on predicting 
-<strong>Walmart’s weekly sales</strong> and making these predictions accessible 
-through an easy-to-use web interface.</p>
+<p>This application predicts <strong>Walmart weekly sales</strong> and provides a 
+simple interface for store and regional managers to make operational decisions.</p>
 
-<p>The tool is designed to support <strong>Store Managers</strong> and 
-<strong>Regional Managers</strong> by helping them make data-driven operational decisions, such as:</p>
-
-<h3 style="color:#38BDF8; font-weight:800;">For Store & Regional Managers:</h3>
 <ul>
-    <li>👥 How many employees to schedule</li>
-    <li>📦 How much inventory to order</li>
-    <li>📈 When to prepare for high-demand periods</li>
+    <li>👥 Workforce planning</li>
+    <li>📦 Inventory ordering</li>
+    <li>📈 Demand preparation</li>
+    <li>🚚 Supply chain timing</li>
 </ul>
 
-<p>Because the interface requires <strong>no coding skills</strong>, managers can obtain real-time sales predictions quickly.</p>
-
-<h3 style="color:#38BDF8; font-weight:800;">For Supply Chain & Inventory Planners:</h3>
-<ul>
-    <li>🚫 Prevent stockouts</li>
-    <li>📉 Reduce overstock</li>
-    <li>🚚 Manage logistics and replenishment more efficiently</li>
-</ul>
-
-<p>This application transforms raw data into 
-<strong>actionable insights</strong>, helping Walmart improve forecasting, planning, 
-and operational efficiency.</p>
+<p>No coding skills are required to use this tool.</p>
 
 </div>
 """, unsafe_allow_html=True)
 
 # ============================================================
-# 6) MAIN INPUT CARD
+# 6) INPUT CARD
 # ============================================================
 
 st.markdown("<div class='main-card'>", unsafe_allow_html=True)
@@ -245,8 +228,8 @@ if st.button("Predict Weekly Sales"):
     st.info(
         ai_insight(
             "Weekly Sales Prediction",
-            "Explain the meaning of this forecast for labor planning and inventory decisions.",
-            {"predicted_sales": pred, "store": store},
+            "Explain meaning for inventory and staffing.",
+            {"predicted_sales": pred},
         )
     )
 
@@ -270,7 +253,7 @@ importance = dict(sorted(importance.items(), key=lambda x: x[1], reverse=True))
 fig_imp, ax_imp = plt.subplots()
 ax_imp.barh(list(importance.keys()), list(importance.values()), color="#38BDF8")
 ax_imp.invert_yaxis()
-ax_imp.set_xlabel("Change in Predicted Sales")
+ax_imp.set_xlabel("Change in Prediction")
 ax_imp.set_title("Feature Sensitivity (+10%)")
 st.pyplot(fig_imp)
 
@@ -278,7 +261,7 @@ st.write("### 🧠 AI Insight on Drivers")
 st.info(
     ai_insight(
         "Feature Sensitivity",
-        "Explain which inputs have the greatest influence on projected sales.",
+        "Which factors most influence sales?",
         importance,
     )
 )
@@ -307,8 +290,8 @@ future_preds = model.predict(forecast_df)
 
 fig_fore, ax_fore = plt.subplots()
 ax_fore.plot(future_weeks, future_preds, marker="o", color="#00D5FF")
-ax_fore.set_xlabel("Week Number")
-ax_fore.set_ylabel("Predicted Weekly Sales")
+ax_fore.set_xlabel("Week")
+ax_fore.set_ylabel("Predicted Sales")
 ax_fore.set_title("10-Week Forecast")
 st.pyplot(fig_fore)
 
@@ -316,8 +299,8 @@ st.write("### 🧠 AI Insight on Forecast")
 st.info(
     ai_insight(
         "10-Week Forecast",
-        "Explain how this forecast supports planning and operations.",
-        {"weeks": list(future_weeks), "sales": list(map(float, future_preds))},
+        "Short forecast summary.",
+        {"weeks": list(future_weeks)},
     )
 )
 
