@@ -1,7 +1,6 @@
 # ============================================================
 # Walmart Weekly Sales Prediction Dashboard
-# Dark Theme • Sky Blue Accents • Lightweight AI Insights
-# Python 3.12 Compatible
+# Dark Theme • Sky Blue Accents • AI Insights • Python 3.12 Compatible
 # ============================================================
 
 import os
@@ -88,21 +87,23 @@ if bg64:
     )
 
 # ============================================================
-# 3) LIGHTWEIGHT OPENAI INSIGHT FUNCTION
+# 3) OPENAI CLIENT + SAFE AI INSIGHT FUNCTION (429 PROTECTED)
 # ============================================================
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=60)
 def ai_insight(title, explanation, values):
     """
-    Ultra-light, low-cost AI insights.
-    Generates 3 short bullets (<12 words each).
-    Uses max_tokens=80 to reduce cost.
+    Same shape as original, but:
+    - caches for 60 seconds → prevents repeated calls
+    - avoids 429 errors by returning cooldown message
+    - keeps full OpenAI behavior
     """
     prompt = f"""
-    Give 3 short business insights.
-    Keep each bullet under 12 words.
+    You are a business analyst explaining results to Walmart executives.
+    Use clear business English, avoid ML jargon, and give 3–5 bullet points.
+
     Title: {title}
     Context: {explanation}
     Values: {values}
@@ -112,12 +113,18 @@ def ai_insight(title, explanation, values):
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=80,
-            temperature=0.3,
+            max_tokens=200,
         )
         return resp.choices[0].message["content"].strip()
+
     except Exception as e:
-        return f"⚠️ AI insight unavailable: {str(e)[:120]}"
+        msg = str(e)
+
+        # If OpenAI rate limit hit → return friendly message (no crash)
+        if "rate_limit" in msg or "429" in msg or "requests per min" in msg:
+            return "⏳ AI Insight cooling down… please wait 20 seconds and try again."
+
+        return f"(AI insight unavailable: {msg[:180]})"
 
 # ============================================================
 # 4) HEADER
@@ -142,7 +149,7 @@ if logo64:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ============================================================
-# 5) PROJECT OVERVIEW (unchanged)
+# 5) PROJECT OVERVIEW
 # ============================================================
 
 st.markdown("""
@@ -156,23 +163,14 @@ st.markdown("""
 
 <h2 style="color:#38BDF8; font-weight:800;">📝 Project Overview</h2>
 
-<p>This application predicts <strong>Walmart weekly sales</strong> and provides a 
-simple interface for store and regional managers to make operational decisions.</p>
-
-<ul>
-    <li>👥 Workforce planning</li>
-    <li>📦 Inventory ordering</li>
-    <li>📈 Demand preparation</li>
-    <li>🚚 Supply chain timing</li>
-</ul>
-
-<p>No coding skills are required to use this tool.</p>
+<p>This application predicts weekly Walmart sales and supports planning:
+workforce management, inventory ordering, and demand forecasting.</p>
 
 </div>
 """, unsafe_allow_html=True)
 
 # ============================================================
-# 6) INPUT CARD
+# 6) INPUT SECTION
 # ============================================================
 
 st.markdown("<div class='main-card'>", unsafe_allow_html=True)
@@ -228,8 +226,8 @@ if st.button("Predict Weekly Sales"):
     st.info(
         ai_insight(
             "Weekly Sales Prediction",
-            "Explain meaning for inventory and staffing.",
-            {"predicted_sales": pred},
+            "Explain what this means for planning.",
+            {"predicted_sales": pred, "store": store},
         )
     )
 
@@ -261,7 +259,7 @@ st.write("### 🧠 AI Insight on Drivers")
 st.info(
     ai_insight(
         "Feature Sensitivity",
-        "Which factors most influence sales?",
+        "Which factors matter most?",
         importance,
     )
 )
@@ -299,7 +297,7 @@ st.write("### 🧠 AI Insight on Forecast")
 st.info(
     ai_insight(
         "10-Week Forecast",
-        "Short forecast summary.",
+        "Short explanation of trend.",
         {"weeks": list(future_weeks)},
     )
 )
