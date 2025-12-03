@@ -1,4 +1,4 @@
-mlflow>=2.8.0
+mlflow
 xgboost
 cloudpickle
 pandas
