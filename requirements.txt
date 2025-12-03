@@ -1,7 +1,8 @@
-streamlit
+mlflow>=2.8.0
+xgboost
+cloudpickle
 pandas
 numpy
 matplotlib
-scikit-learn
-mlflow
 openai
+streamlit
