@@ -26,7 +26,7 @@ os.environ["DATABRICKS_TOKEN"] = DATABRICKS_TOKEN
 mlflow.set_tracking_uri("databricks")
 mlflow.set_registry_uri("databricks-uc")
 
-MODEL_URI = "models:/workspace.jzhao221.walmartsales/3"
+MODEL_URI = "models:/workspace.jzhao221.walmartsales/4"
 
 @st.cache_resource
 def load_model():
