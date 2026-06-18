@@ -4,7 +4,7 @@ protobuf==4.25.3
 setuptools==69.5.1
 numpy==1.26.4
 pandas==2.3.3
-matplotlib
-xgboost
-cloudpickle
-openai
+matplotlib==3.8.4
+xgboost==2.1.4
+cloudpickle==3.0.0
+openai==1.35.14
