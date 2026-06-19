@@ -1,32 +1,22 @@
 # ============================================================
 # Walmart Weekly Sales Prediction Dashboard
-# Dark Theme • Sky Blue Accents • AI Insights • Python 3.12 Compatible
+# Local MLflow Model Version
 # ============================================================
 
-import os
 import base64
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 
-import mlflow
 import mlflow.pyfunc
 from openai import OpenAI
 
 # ============================================================
-# 1) DATABRICKS + MLflow CONFIG
+# 1) LOCAL MODEL CONFIG
 # ============================================================
 
-DATABRICKS_HOST = st.secrets["DATABRICKS_HOST"]
-DATABRICKS_TOKEN = st.secrets["DATABRICKS_TOKEN"]
-os.environ["DATABRICKS_HOST"] = DATABRICKS_HOST
-os.environ["DATABRICKS_TOKEN"] = DATABRICKS_TOKEN
-
-mlflow.set_tracking_uri("databricks")
-mlflow.set_registry_uri("databricks-uc")
-
-MODEL_URI = "models:/workspace.jzhao221.walmartsales/4"
+MODEL_URI = "walmart_model"
 
 @st.cache_resource
 def load_model():
@@ -42,7 +32,7 @@ def load_image_base64(path):
     try:
         with open(path, "rb") as f:
             return base64.b64encode(f.read()).decode()
-    except:
+    except Exception:
         return None
 
 bg64 = load_image_base64("background.jpg")
@@ -135,7 +125,7 @@ if logo64:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ============================================================
-# 5) ENHANCED PROJECT OVERVIEW (YOUR EXACT TEXT)
+# 5) PROJECT OVERVIEW
 # ============================================================
 
 st.markdown("""
@@ -204,10 +194,6 @@ with col2:
     cpi = st.number_input("CPI", value=220.0)
     unemp = st.number_input("Unemployment Rate (%)", value=5.0)
 
-# ============================================================
-# 7) FIXED INPUT SCHEMA — MATCHES YOUR MODEL EXACTLY
-# ============================================================
-
 input_df = pd.DataFrame({
     "Store": [float(store)],
     "Holiday_Flag": [float(holiday)],
@@ -221,7 +207,7 @@ input_df = pd.DataFrame({
 })
 
 # ============================================================
-# 8) PREDICTION
+# 7) PREDICTION
 # ============================================================
 
 st.subheader("📌 Predicted Weekly Sales")
@@ -244,7 +230,7 @@ if st.button("Predict Weekly Sales"):
     )
 
 # ============================================================
-# 9) FEATURE SENSITIVITY
+# 8) FEATURE SENSITIVITY
 # ============================================================
 
 st.subheader("📍 Feature Sensitivity (What drives this prediction?)")
@@ -277,7 +263,7 @@ st.info(
 )
 
 # ============================================================
-# 10) 10-WEEK FORECAST
+# 9) 10-WEEK FORECAST
 # ============================================================
 
 st.subheader("📈 10-Week Sales Forecast")
