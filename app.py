@@ -16,7 +16,7 @@ from openai import OpenAI
 # 1) LOCAL MODEL CONFIG
 # ============================================================
 
-MODEL_URI = "walmart_model"
+MODEL_URI = "model.pkl"
 
 @st.cache_resource
 def load_model():
